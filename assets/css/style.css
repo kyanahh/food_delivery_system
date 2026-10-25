@@ -1,0 +1,29 @@
+:root {
+    --jollibee-red: #d71920;
+    --jollibee-dark-red: #b51218;
+}
+
+.btn-jollibee {
+    background-color: var(--jollibee-red);
+    border-color: var(--jollibee-red);
+    color: #fff;
+}
+
+.btn-jollibee:hover {
+    background-color: var(--jollibee-dark-red);
+    border-color: var(--jollibee-dark-red);
+    color: #fff;
+}
+
+.bg-jollibee {
+    background-color: var(--jollibee-red) !important;
+}
+
+.text-jollibee {
+    color: var(--jollibee-red) !important;
+}
+
+.list-group-item.active {
+    background-color: var(--jollibee-red);
+    border-color: var(--jollibee-red);
+}
