@@ -185,9 +185,7 @@ switch ($order['order_status']) {
             <a href="menu.php" class="btn btn-light btn-sm">
                 <i class="bi bi-grid me-1"></i>Menu
             </a>
-            <span class="text-white customer-user-name">
-                <i class="bi bi-person-circle me-1"></i><?= e($customerName) ?>
-            </span>
+            <a href="profile.php" class="btn btn-sm btn-outline-light"><i class="bi bi-person me-1"></i><span class="customer-user-name"><?= e($firstName) ?></span></a>
             <a href="../logout.php" class="btn btn-light btn-sm">
                 <i class="bi bi-box-arrow-right me-1"></i>Logout
             </a>
