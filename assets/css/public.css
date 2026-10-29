@@ -1,0 +1,351 @@
+
+:root {
+    --jp-red: #e4002b;
+    --jp-dark-red: #c90025;
+    --jp-yellow: #ffc72c;
+    --jp-cream: #fffaf5;
+    --jp-dark: #252525;
+    --jp-muted: #6c757d;
+    --jp-border: #eeeeee;
+}
+
+body.jp-page {
+    background: #fff;
+    color: var(--jp-dark);
+    min-height: 100vh;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+.jp-navbar {
+    background: var(--jp-red);
+    min-height: 74px;
+}
+
+.jp-brand {
+    color: #fff !important;
+    text-decoration: none;
+    font-weight: 800;
+    font-size: 1.05rem;
+    letter-spacing: -.2px;
+}
+
+.jp-brand-mark {
+    width: 38px;
+    height: 38px;
+    background: #fff;
+    color: var(--jp-red);
+    border-radius: 50%;
+}
+
+.jp-nav-link {
+    color: #fff !important;
+    font-weight: 700;
+    padding: .65rem .75rem !important;
+}
+
+.jp-nav-link:hover {
+    color: #fff !important;
+    opacity: .85;
+}
+
+.jp-order-btn {
+    background: #fff;
+    color: var(--jp-red);
+    border: 0;
+    border-radius: 999px;
+    font-weight: 800;
+    padding: .65rem 1.15rem;
+}
+
+.jp-order-btn:hover {
+    background: var(--jp-yellow);
+    color: var(--jp-dark);
+}
+
+.jp-yellow-line {
+    height: 5px;
+    background: var(--jp-yellow);
+}
+
+.jp-hero {
+    background: var(--jp-cream);
+    padding: 4.5rem 0 3.5rem;
+}
+
+.jp-kicker {
+    color: var(--jp-red);
+    font-weight: 800;
+    font-size: .95rem;
+    letter-spacing: .3px;
+    text-transform: uppercase;
+}
+
+.jp-hero-title {
+    font-size: clamp(2.5rem, 5vw, 4.4rem);
+    line-height: 1.02;
+    font-weight: 900;
+    letter-spacing: -1.5px;
+}
+
+.jp-hero-title span {
+    color: var(--jp-red);
+}
+
+.jp-hero-text {
+    max-width: 600px;
+    color: var(--jp-muted);
+    font-size: 1.08rem;
+}
+
+.jp-primary-btn {
+    background: var(--jp-red);
+    border-color: var(--jp-red);
+    color: #fff;
+    font-weight: 800;
+    border-radius: 999px;
+    padding: .8rem 1.5rem;
+}
+
+.jp-primary-btn:hover,
+.jp-primary-btn:focus {
+    background: var(--jp-dark-red);
+    border-color: var(--jp-dark-red);
+    color: #fff;
+}
+
+.jp-outline-btn {
+    color: var(--jp-red);
+    border: 2px solid var(--jp-red);
+    background: #fff;
+    font-weight: 800;
+    border-radius: 999px;
+    padding: .75rem 1.4rem;
+}
+
+.jp-outline-btn:hover {
+    background: var(--jp-red);
+    color: #fff;
+}
+
+.jp-hero-card {
+    background: var(--jp-red);
+    border: 0;
+    border-radius: 1.25rem;
+    color: #fff;
+    overflow: hidden;
+    box-shadow: 0 1rem 2rem rgba(228,0,43,.18);
+}
+
+.jp-hero-food {
+    min-height: 300px;
+    background:
+        radial-gradient(circle at 75% 25%, rgba(255,199,44,.95) 0 7%, transparent 8%),
+        radial-gradient(circle at 25% 75%, rgba(255,199,44,.8) 0 6%, transparent 7%),
+        linear-gradient(145deg, #f51d42, #c90025);
+}
+
+.jp-hero-food-icon {
+    width: 150px;
+    height: 150px;
+    background: #fff;
+    color: var(--jp-red);
+}
+
+.jp-hero-food-title {
+    font-size: 2rem;
+    font-weight: 900;
+}
+
+.jp-category-strip {
+    border-top: 1px solid var(--jp-border);
+    border-bottom: 1px solid var(--jp-border);
+    background: #fff;
+}
+
+.jp-category {
+    color: var(--jp-dark);
+    text-decoration: none;
+    font-weight: 700;
+    padding: 1rem 1.1rem;
+    white-space: nowrap;
+    border-bottom: 3px solid transparent;
+}
+
+.jp-category:hover,
+.jp-category.active {
+    color: var(--jp-red);
+    border-bottom-color: var(--jp-red);
+}
+
+.jp-section {
+    padding: 4.5rem 0;
+}
+
+.jp-section-title {
+    font-weight: 900;
+    font-size: 2.2rem;
+}
+
+.jp-section-subtitle {
+    color: var(--jp-muted);
+}
+
+.jp-feature-card {
+    border: 1px solid var(--jp-border);
+    border-radius: 1rem;
+    height: 100%;
+    transition: .15s ease;
+}
+
+.jp-feature-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 .7rem 1.5rem rgba(0,0,0,.07);
+}
+
+.jp-feature-icon {
+    width: 58px;
+    height: 58px;
+    background: #fff1f3;
+    color: var(--jp-red);
+}
+
+.jp-step-number {
+    width: 48px;
+    height: 48px;
+    background: var(--jp-red);
+    color: #fff;
+    font-weight: 900;
+}
+
+.jp-cta {
+    background: var(--jp-red);
+    color: #fff;
+}
+
+.jp-cta .jp-primary-btn {
+    background: #fff;
+    color: var(--jp-red);
+    border-color: #fff;
+}
+
+.jp-cta .jp-primary-btn:hover {
+    background: var(--jp-yellow);
+    color: var(--jp-dark);
+    border-color: var(--jp-yellow);
+}
+
+.jp-footer {
+    background: #202020;
+    color: rgba(255,255,255,.7);
+}
+
+.jp-footer-brand {
+    color: #fff;
+    font-weight: 800;
+}
+
+.jp-auth-page {
+    min-height: calc(100vh - 79px);
+    background:
+        linear-gradient(rgba(255,250,245,.92), rgba(255,250,245,.92)),
+        radial-gradient(circle at 15% 20%, #ffe5e9, transparent 35%),
+        radial-gradient(circle at 85% 80%, #fff0c7, transparent 35%);
+    padding: 3.5rem 0;
+}
+
+.jp-auth-card {
+    border: 0;
+    border-radius: 1.2rem;
+    overflow: hidden;
+    box-shadow: 0 1rem 2.5rem rgba(0,0,0,.09);
+}
+
+.jp-auth-side {
+    background: var(--jp-red);
+    color: #fff;
+    min-height: 100%;
+    position: relative;
+    overflow: hidden;
+}
+
+.jp-auth-side::after {
+    content: "";
+    position: absolute;
+    width: 260px;
+    height: 260px;
+    right: -110px;
+    bottom: -110px;
+    border-radius: 50%;
+    background: rgba(255,199,44,.25);
+}
+
+.jp-auth-badge {
+    width: 74px;
+    height: 74px;
+    background: #fff;
+    color: var(--jp-red);
+}
+
+.jp-auth-side .small-line {
+    color: rgba(255,255,255,.78);
+}
+
+.jp-auth-form {
+    background: #fff;
+}
+
+.jp-form-label {
+    font-weight: 700;
+}
+
+.form-control {
+    border-radius: .7rem;
+    padding: .75rem .85rem;
+}
+
+.form-control:focus {
+    border-color: #ee7188;
+    box-shadow: 0 0 0 .2rem rgba(228,0,43,.12);
+}
+
+.input-group .form-control {
+    border-left: 0;
+}
+
+.input-group-text {
+    border-radius: .7rem 0 0 .7rem;
+}
+
+.jp-alert {
+    border: 0;
+    border-radius: .75rem;
+}
+
+.jp-back-link {
+    color: var(--jp-muted);
+    text-decoration: none;
+}
+
+.jp-back-link:hover {
+    color: var(--jp-red);
+}
+
+@media (max-width: 991.98px) {
+    .jp-hero {
+        padding-top: 3.2rem;
+    }
+
+    .jp-auth-page {
+        padding: 1.5rem 0;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .jp-hero-title {
+        font-size: 2.55rem;
+    }
+
+    .jp-section {
+        padding: 3.2rem 0;
+    }
+}

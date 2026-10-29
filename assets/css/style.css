@@ -3,6 +3,23 @@
     --jollibee-dark-red: #b51218;
 }
 
+body {
+    background-color: #f8f9fa;
+}
+
+
+.navbar-brand {
+    font-size: 1.25rem;
+}
+
+.card {
+    border-radius: 8px;
+}
+
+.btn {
+    border-radius: 6px;
+}
+
 .btn-jollibee {
     background-color: var(--jollibee-red);
     border-color: var(--jollibee-red);
