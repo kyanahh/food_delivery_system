@@ -770,12 +770,49 @@ foreach ($allowed as $x) {
 
                                             <td class="text-end pe-4">
 
-                                                <a
-                                                    href="view-order.php?id=<?= (int) $o["order_id"] ?>"
-                                                    class="btn btn-sm btn-outline-danger"
-                                                >
-                                                    View
-                                                </a>
+                                                <div class="d-flex justify-content-end gap-1">
+
+                                                    <!-- VIEW -->
+                                                    <a
+                                                        href="view-order.php?id=<?= (int) $o["order_id"] ?>"
+                                                        class="btn btn-sm btn-outline-danger"
+                                                        title="View Order"
+                                                    >
+                                                        <i class="bi bi-eye"></i>
+                                                    </a>
+
+
+                                                    <!-- EDIT -->
+                                                    <?php if (
+                                                        !in_array(
+                                                            $o["order_status"],
+                                                            ["Completed", "Cancelled"],
+                                                            true
+                                                        )
+                                                    ): ?>
+
+                                                        <a
+                                                            href="edit-order.php?id=<?= (int) $o["order_id"] ?>"
+                                                            class="btn btn-sm btn-outline-primary"
+                                                            title="Edit Order"
+                                                        >
+                                                            <i class="bi bi-pencil-square"></i>
+                                                        </a>
+
+                                                    <?php endif; ?>
+
+
+                                                    <!-- PRINT RECEIPT -->
+                                                    <a
+                                                        href="print-receipt.php?id=<?= (int) $o["order_id"] ?>"
+                                                        target="_blank"
+                                                        class="btn btn-sm btn-outline-dark"
+                                                        title="Print Receipt"
+                                                    >
+                                                        <i class="bi bi-printer"></i>
+                                                    </a>
+
+                                                </div>
 
                                             </td>
 
