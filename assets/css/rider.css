@@ -1,0 +1,107 @@
+:root {
+    --rider-red: #d71920;
+    --rider-dark: #b51218;
+    --rider-bg: #f5f6f8;
+    --rider-border: #e9ecef;
+}
+
+/* General Rider Page */
+.rider-page {
+    background: var(--rider-bg);
+    color: #212529;
+    min-height: 100vh;
+}
+
+/* Top Navigation */
+.rider-topbar {
+    background: var(--rider-red);
+    min-height: 58px;
+}
+
+.rider-brand {
+    color: #fff;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+/* Sidebar */
+.rider-sidebar {
+    background: #fff;
+    border-right: 1px solid var(--rider-border);
+    min-height: calc(100vh - 58px);
+}
+
+.rider-profile {
+    border-bottom: 1px solid var(--rider-border);
+}
+
+.rider-avatar {
+    width: 50px;
+    height: 50px;
+    background: var(--rider-red);
+    color: #fff;
+}
+
+.rider-nav .list-group-item {
+    border: 0;
+    border-radius: 0.65rem !important;
+    margin-bottom: 0.25rem;
+    color: #495057;
+    font-weight: 500;
+    padding: 0.75rem 0.9rem;
+}
+
+.rider-nav .list-group-item:hover {
+    background: #fff1f1;
+    color: var(--rider-red);
+}
+
+.rider-nav .list-group-item.active {
+    background: var(--rider-red);
+    color: #fff;
+}
+
+/* Cards */
+.rider-card {
+    border: 0;
+    border-radius: 0.85rem;
+    box-shadow: 0 0.15rem 0.7rem rgba(0, 0, 0, 0.07);
+}
+
+/* Main Content */
+.rider-main {
+    min-width: 0;
+}
+
+/* Buttons */
+.btn-rider {
+    background: var(--rider-red);
+    border-color: var(--rider-red);
+    color: #fff;
+}
+
+.btn-rider:hover {
+    background: var(--rider-dark);
+    border-color: var(--rider-dark);
+    color: #fff;
+}
+
+/* Text */
+.text-rider {
+    color: var(--rider-red) !important;
+}
+
+/* Mobile Responsive */
+@media (max-width: 767.98px) {
+
+    .rider-sidebar {
+        min-height: auto;
+        border-right: 0;
+        border-bottom: 1px solid var(--rider-border);
+    }
+
+    .rider-main {
+        padding-top: 1rem !important;
+    }
+
+}
