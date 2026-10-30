@@ -7,17 +7,17 @@ require_once "../config/database.php";
 
 
 // Get categories
-$categoryStmt = $pdo->query("
+$categoryQuery = $pdo->query("
     SELECT *
     FROM food_categories
     ORDER BY category_name ASC
 ");
 
-$categories = $categoryStmt->fetchAll();
+$categories = $categoryQuery->fetchAll(PDO::FETCH_ASSOC);
 
 
 // Get food items
-$foodStmt = $pdo->query("
+$foodQuery = $pdo->query("
     SELECT
         food_items.*,
         food_categories.category_name
@@ -27,232 +27,121 @@ $foodStmt = $pdo->query("
     ORDER BY food_items.created_at DESC
 ");
 
-$success = $_GET["success"] ?? "";
-
-$foodItems = $foodStmt->fetchAll();
+$foods = $foodQuery->fetchAll(PDO::FETCH_ASSOC);
 
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menu Management | Jollibee Central Plaza</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
 
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
+    :root {
+        --jollibee-red: #d71920;
+        --jollibee-dark-red: #b51218;
+    }
+    body { background: #f8f9fa; }
+    .bg-jollibee { background-color: var(--jollibee-red) !important; }
+    .btn-jollibee {
+        background-color: var(--jollibee-red);
+        border-color: var(--jollibee-red);
+        color: #fff;
+    }
+    .btn-jollibee:hover {
+        background-color: var(--jollibee-dark-red);
+        border-color: var(--jollibee-dark-red);
+        color: #fff;
+    }
+    .text-jollibee { color: var(--jollibee-red) !important; }
+    .sidebar { min-height: calc(100vh - 56px); }
+    .sidebar .nav-link {
+        color: #343a40;
+        border-radius: .5rem;
+        margin-bottom: .25rem;
+    }
+    .sidebar .nav-link:hover,
+    .sidebar .nav-link.active {
+        background: var(--jollibee-red);
+        color: #fff;
+    }
+    .summary-card {
+        border: 0;
+        box-shadow: 0 .125rem .25rem rgba(0,0,0,.075);
+    }
+    .summary-icon {
+        width: 48px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 12px;
+        background: rgba(215, 25, 32, .1);
+        color: var(--jollibee-red);
+        font-size: 1.35rem;
+    }
+    .table th { white-space: nowrap; }
 
-    <title>
-        Menu Management | Jollibee Central Plaza
-    </title>
-
-
-    <link
-        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-        rel="stylesheet"
-    >
-
-    <link
-        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
-        rel="stylesheet"
-    >
-
-    <link
-        rel="stylesheet"
-        href="../assets/css/style.css"
-    >
-
+    </style>
 </head>
-
-
-<body class="bg-light">
-
-
-<!-- NAVBAR -->
-
+<body>
 <nav class="navbar navbar-dark bg-jollibee shadow-sm">
-
     <div class="container-fluid">
-
-        <a class="navbar-brand fw-bold"
-           href="dashboard.php">
-
-            Jollibee Central Plaza
-            <span class="fw-normal">
-                | Admin
-            </span>
-
+        <a class="navbar-brand fw-bold" href="dashboard.php">
+            Jollibee Central Plaza <span class="fw-normal">| Admin</span>
         </a>
-
-
-        <div class="d-flex align-items-center">
-
-            <span class="text-white me-3">
-
-                <i class="bi bi-person-circle"></i>
-
-                <?= htmlspecialchars(
-                    $_SESSION['first_name']
-                ); ?>
-
+        <div class="d-flex align-items-center gap-3 text-white">
+            <span>
+                <i class="bi bi-person-circle me-1"></i>
+                <?= htmlspecialchars(($_SESSION["first_name"] ?? "Admin") . " " . ($_SESSION["last_name"] ?? "")) ?>
             </span>
-
-
-            <a href="../logout.php"
-               class="btn btn-light btn-sm">
-
-                <i class="bi bi-box-arrow-right"></i>
-
-                Logout
-
+            <a href="../logout.php" class="btn btn-light btn-sm">
+                <i class="bi bi-box-arrow-right me-1"></i> Logout
             </a>
-
         </div>
-
     </div>
-
 </nav>
-
-
-
 <div class="container-fluid">
-
     <div class="row">
-
-
-        <!-- SIDEBAR -->
-
-        <aside class="col-md-3 col-lg-2
-                      bg-white border-end
-                      min-vh-100 p-3">
-
-
-            <div class="text-center mb-4">
-
-                <div
-                    class="bg-jollibee text-white
-                           rounded-circle
-                           d-inline-flex
-                           align-items-center
-                           justify-content-center"
-
-                    style="width:60px;height:60px;"
-                >
-
-                    <i class="bi bi-shield-lock fs-3"></i>
-
-                </div>
-
-
-                <h6 class="mt-2 mb-0">
-
-                    <?= htmlspecialchars(
-                        $_SESSION['first_name']
-                    ); ?>
-
-                </h6>
-
-
-                <small class="text-muted">
-
-                    Administrator
-
-                </small>
-
+<aside class="col-md-3 col-lg-2 bg-white border-end sidebar p-3">
+        <div class="text-center py-3 mb-3 border-bottom">
+            <div class="text-jollibee fs-1">
+                <i class="bi bi-shield-lock-fill"></i>
             </div>
-
-
-
-            <div class="list-group list-group-flush">
-
-
-                <a href="dashboard.php"
-                   class="list-group-item
-                          list-group-item-action">
-
-                    <i class="bi bi-speedometer2 me-2"></i>
-
-                    Dashboard
-
-                </a>
-
-
-                <a href="users.php"
-                   class="list-group-item
-                          list-group-item-action">
-
-                    <i class="bi bi-people me-2"></i>
-
-                    User Management
-
-                </a>
-
-
-                <a href="menu.php"
-                   class="list-group-item
-                          list-group-item-action active">
-
-                    <i class="bi bi-menu-button-wide me-2"></i>
-
-                    Menu Management
-
-                </a>
-
-
-                <a href="orders.php"
-                   class="list-group-item
-                          list-group-item-action">
-
-                    <i class="bi bi-receipt me-2"></i>
-
-                    Orders
-
-                </a>
-
-
-                <a href="sales.php"
-                   class="list-group-item
-                          list-group-item-action">
-
-                    <i class="bi bi-bar-chart me-2"></i>
-
-                    Sales Reports
-
-                </a>
-
-
-                <a href="forecast.php"
-                   class="list-group-item
-                          list-group-item-action">
-
-                    <i class="bi bi-graph-up-arrow me-2"></i>
-
-                    Demand Forecasting
-
-                </a>
-
-
-                <a href="settings.php"
-                   class="list-group-item
-                          list-group-item-action">
-
-                    <i class="bi bi-gear me-2"></i>
-
-                    System Settings
-
-                </a>
-
-
+            <div class="fw-bold">
+                <?= htmlspecialchars(($_SESSION["first_name"] ?? "Admin") . " " . ($_SESSION["last_name"] ?? "")) ?>
             </div>
-
-        </aside>
-
-
-
-        <!-- MAIN CONTENT -->
-
+            <small class="text-muted">Administrator</small>
+        </div>
+        <nav class="nav flex-column">
+                <a class="nav-link" href="dashboard.php">
+                    <i class="bi bi-speedometer2 me-2"></i>Dashboard
+                </a>
+                <a class="nav-link" href="users.php">
+                    <i class="bi bi-people me-2"></i>User Management
+                </a>
+                <a class="nav-link active" href="menu.php">
+                    <i class="bi bi-grid me-2"></i>Menu Management
+                </a>
+                <a class="nav-link" href="orders.php">
+                    <i class="bi bi-receipt me-2"></i>Orders
+                </a>
+                <a class="nav-link" href="sales.php">
+                    <i class="bi bi-bar-chart-line me-2"></i>Sales Reports
+                </a>
+                <a class="nav-link" href="forecast.php">
+                    <i class="bi bi-graph-up-arrow me-2"></i>Demand Forecasting
+                </a>
+                <a class="nav-link" href="settings.php">
+                    <i class="bi bi-gear me-2"></i>System Settings
+                </a>
+        </nav>
+    </aside>
         <main class="col-md-9 col-lg-10 p-4">
+
 
 
             <!-- PAGE HEADER -->
@@ -347,42 +236,9 @@ $foodItems = $foodStmt->fetchAll();
                     </div>
 
                 <?php endforeach; ?>
-            </div>
-
-
-            <?php if ($success === "added"): ?>
-
-    <div class="alert alert-success alert-dismissible fade show">
-
-        <i class="bi bi-check-circle me-2"></i>
-
-        Food item was successfully added.
-
-        <button
-            type="button"
-            class="btn-close"
-            data-bs-dismiss="alert"
-        ></button>
-
-    </div>
-
-        <?php elseif ($success === "updated"): ?>
-
-            <div class="alert alert-success alert-dismissible fade show">
-
-                <i class="bi bi-check-circle me-2"></i>
-
-                Food item was successfully updated.
-
-                <button
-                    type="button"
-                    class="btn-close"
-                    data-bs-dismiss="alert"
-                ></button>
 
             </div>
 
-        <?php endif; ?>
 
 
             <!-- MENU TABLE -->
@@ -411,9 +267,7 @@ $foodItems = $foodStmt->fetchAll();
                         <span class="badge
                                      bg-danger">
 
-                            <?= count($foodItems); ?>
-
-                            Items
+                            <?= count($foods); ?> Items
 
                         </span>
 
@@ -436,11 +290,17 @@ $foodItems = $foodStmt->fetchAll();
                                 <tr>
 
                                     <th>ID</th>
+
                                     <th>Image</th>
+
                                     <th>Food</th>
+
                                     <th>Category</th>
+
                                     <th>Price</th>
+
                                     <th>Status</th>
+
                                     <th>Action</th>
 
                                 </tr>
@@ -451,10 +311,10 @@ $foodItems = $foodStmt->fetchAll();
                             <tbody>
 
 
-                            <?php if (count($foodItems) > 0): ?>
+                            <?php if (!empty($foods)): ?>
 
 
-                                <?php foreach ($foodItems as $food): ?>
+                                <?php foreach ($foods as $food): ?>
 
 
                                     <tr>
@@ -468,24 +328,26 @@ $foodItems = $foodStmt->fetchAll();
 
                                         <td>
                                             <?php if (!empty($food['image'])): ?>
-
                                                 <img
                                                     src="../assets/uploads/menu/<?= htmlspecialchars($food['image']); ?>"
                                                     alt="<?= htmlspecialchars($food['food_name']); ?>"
-                                                    width="60"
-                                                    height="60"
-                                                    class="rounded object-fit-cover"
+                                                    class="rounded border"
+                                                    style="
+                                                        width: 70px;
+                                                        height: 70px;
+                                                        object-fit: cover;
+                                                    "
                                                 >
-
                                             <?php else: ?>
-
                                                 <div
-                                                    class="bg-light rounded d-flex align-items-center justify-content-center"
-                                                    style="width:60px;height:60px;"
+                                                    class="bg-light border rounded d-flex align-items-center justify-content-center"
+                                                    style="
+                                                        width: 70px;
+                                                        height: 70px;
+                                                    "
                                                 >
-                                                    <i class="bi bi-image text-muted"></i>
+                                                    <i class="bi bi-image text-muted fs-4"></i>
                                                 </div>
-
                                             <?php endif; ?>
                                         </td>
 
@@ -600,7 +462,7 @@ $foodItems = $foodStmt->fetchAll();
                                     </tr>
 
 
-                                <?php endforeach; ?>
+                               <?php endforeach; ?>
 
 
                             <?php else: ?>
@@ -609,7 +471,7 @@ $foodItems = $foodStmt->fetchAll();
                                 <tr>
 
                                     <td
-                                        colspan="6"
+                                        colspan="7"
                                         class="text-center
                                                text-muted
                                                py-5"
@@ -644,19 +506,10 @@ $foodItems = $foodStmt->fetchAll();
             </div>
 
 
+        
         </main>
-
     </div>
-
 </div>
-
-
-
-<script
-    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js">
-</script>
-
-
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
-
 </html>
