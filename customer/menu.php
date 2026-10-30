@@ -60,8 +60,36 @@ function e($value) {
 
 <nav class="navbar navbar-dark customer-topbar shadow-sm">
     <div class="container-fluid px-3 px-lg-4">
-        <a href="dashboard.php" class="customer-brand">
-            <i class="bi bi-shop me-2"></i>Jollibee Central Plaza
+        <!-- Brand -->
+        <a class="customer-brand d-flex align-items-center text-decoration-none" href="dashboard.php">
+
+            <!-- Circular Logo -->
+            <div style="
+                width: 55px;
+                height: 55px;
+                background: #fff;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-shrink: 0;
+            ">
+                <img 
+                    src="../assets/images/logo.png" 
+                    alt="Jollibee Logo"
+                    style="
+                        width: 35px;
+                        height: 42px;
+                        object-fit: contain;
+                    "
+                >
+            </div>
+
+            <!-- Brand Name -->
+            <span class="ms-2 fw-bold">
+                Jollibee Central Plaza
+            </span>
+
         </a>
         <div class="d-flex align-items-center gap-2">
             <a href="cart.php" class="btn btn-light btn-sm position-relative">

@@ -146,12 +146,36 @@ function statusClass($s)
 
     <div class="container-fluid px-3 px-lg-4">
 
-        <a
-            href="dashboard.php"
-            class="staff-brand d-flex align-items-center gap-2"
-        >
-            <i class="bi bi-shop fs-5"></i>
-            <span>Jollibee Plaza Central</span>
+        <!-- Brand -->
+        <a class="customer-brand d-flex align-items-center text-decoration-none" href="dashboard.php">
+
+            <!-- Circular Logo -->
+            <div style="
+                width: 55px;
+                height: 55px;
+                background: #fff;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-shrink: 0;
+            ">
+                <img 
+                    src="../assets/images/logo.png" 
+                    alt="Jollibee Logo"
+                    style="
+                        width: 35px;
+                        height: 42px;
+                        object-fit: contain;
+                    "
+                >
+            </div>
+
+            <!-- Brand Name -->
+            <span class="ms-2 fw-bold text-white">
+                Jollibee Central Plaza
+            </span>
+
         </a>
 
         <div class="d-flex align-items-center gap-3 text-white">

@@ -74,9 +74,17 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     <div class="container">
 
         <a href="index.php" class="jp-brand d-flex align-items-center gap-2">
-            <span class="jp-brand-mark d-inline-flex align-items-center justify-content-center">
-                <i class="bi bi-shop"></i>
-            </span>
+                <div style="
+                    width: 70px;
+                    height: 70px;
+                    background: white;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                ">
+                    <img src="assets/images/logo.png" alt="Logo" style="height: 45px; width: 50px; object-fit: contain;">
+                </div>
             Jollibee Plaza Central
         </a>
 

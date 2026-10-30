@@ -111,8 +111,37 @@ $firstName = $user['first_name'] ?? ($_SESSION['first_name'] ?? 'Customer');
 <body class="customer-page">
 <nav class="navbar customer-topbar px-3 px-lg-4">
     <div class="container-fluid px-0">
-        <a class="customer-brand" href="dashboard.php"><i class="bi bi-shop me-2"></i>Jollibee Central Plaza</a>
-        <div class="d-flex align-items-center gap-2">
+<!-- Brand -->
+        <a class="customer-brand d-flex align-items-center text-decoration-none" href="dashboard.php">
+
+            <!-- Circular Logo -->
+            <div style="
+                width: 55px;
+                height: 55px;
+                background: #fff;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-shrink: 0;
+            ">
+                <img 
+                    src="../assets/images/logo.png" 
+                    alt="Jollibee Logo"
+                    style="
+                        width: 35px;
+                        height: 42px;
+                        object-fit: contain;
+                    "
+                >
+            </div>
+
+            <!-- Brand Name -->
+            <span class="ms-2 fw-bold">
+                Jollibee Central Plaza
+            </span>
+
+        </a>        <div class="d-flex align-items-center gap-2">
             <a href="profile.php" class="btn btn-sm btn-light"><i class="bi bi-person me-1"></i>Profile</a>
             <a href="../logout.php" class="btn btn-light btn-sm"><i class="bi bi-box-arrow-right me-1"></i>Logout</a>
         </div>

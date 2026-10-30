@@ -34,8 +34,37 @@ $error = trim($_GET['error'] ?? '');
 <body class="rider-page">
 <nav class="navbar rider-topbar">
   <div class="container-fluid px-3 px-lg-4">
-    <a href="dashboard.php" class="rider-brand"><i class="bi bi-bicycle me-3"></i>Jollibee Plaza Central</a>
-    <div class="d-flex align-items-center gap-3 text-white">
+<!-- Brand -->
+        <a class="customer-brand d-flex align-items-center text-decoration-none" href="dashboard.php">
+
+            <!-- Circular Logo -->
+            <div style="
+                width: 55px;
+                height: 55px;
+                background: #fff;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-shrink: 0;
+            ">
+                <img 
+                    src="../assets/images/logo.png" 
+                    alt="Jollibee Logo"
+                    style="
+                        width: 35px;
+                        height: 42px;
+                        object-fit: contain;
+                    "
+                >
+            </div>
+
+            <!-- Brand Name -->
+            <span class="ms-2 fw-bold text-white">
+                Jollibee Central Plaza
+            </span>
+
+        </a>    <div class="d-flex align-items-center gap-3 text-white">
       <span class="small"><i class="bi bi-person-circle me-1"></i><?=e($_SESSION['first_name'] ?? 'Rider')?></span>
       <a href="../logout.php" class="btn btn-sm btn-light">Logout</a>
     </div>
