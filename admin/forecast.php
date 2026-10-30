@@ -3,23 +3,25 @@ require_once "../config/database.php";
 require_once "../includes/auth.php";
 requireRole("admin");
 
-$forecastDate = $_GET["date"] ?? date("Y-m-d");
+$forecastStart = $_GET["date"] ?? date("Y-m-d", strtotime("+1 day"));
 
-if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $forecastDate)) {
-    $forecastDate = date("Y-m-d");
+if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $forecastStart)) {
+    $forecastStart = date("Y-m-d", strtotime("+1 day"));
 }
 
-$historyStart = date("Y-m-d", strtotime($forecastDate . " -30 days"));
-$historyEnd   = date("Y-m-d", strtotime($forecastDate . " -1 day"));
-
 /*
- * Simple demand forecasting:
+ * 30-Day Demand Forecast
  * - Uses the average number of paid, non-cancelled orders
- *   for each hour during the previous 30 days.
- * - Also shows today's/current active order count.
- * This matches the project's scope of using historical ordering
- * patterns and peak-hour trends rather than an advanced ML model.
+ *   for each hour during the 30 days immediately before the
+ *   forecast period.
+ * - Generates 24 hourly predictions for each of the next 30 days.
+ * - Total forecast horizon: 30 days / 720 hourly predictions.
+ * - This remains a simple historical-pattern method and does not
+ *   use an advanced machine-learning model.
  */
+$forecastEnd = date("Y-m-d", strtotime($forecastStart . " +29 days"));
+$historyStart = date("Y-m-d", strtotime($forecastStart . " -30 days"));
+$historyEnd   = date("Y-m-d", strtotime($forecastStart . " -1 day"));
 
 $hourlySql = "
     SELECT
@@ -33,7 +35,6 @@ $hourlySql = "
     GROUP BY HOUR(o.created_at)
     ORDER BY order_hour
 ";
-
 $stmt = $pdo->prepare($hourlySql);
 $stmt->execute([
     $historyStart . " 00:00:00",
@@ -41,112 +42,145 @@ $stmt->execute([
 ]);
 
 $hourlyHistory = [];
-
 foreach ($stmt->fetchAll() as $row) {
-    $days = max((int)$row["active_days"], 1);
     $hourlyHistory[(int)$row["order_hour"]] = [
         "total_orders" => (int)$row["total_orders"],
-        "active_days" => $days,
-        "average" => (float)$row["total_orders"] / $days
+        "active_days" => max((int)$row["active_days"], 1),
+        "average" => (float)$row["total_orders"] / max((int)$row["active_days"], 1)
     ];
 }
 
-$todaySql = "
+/* Actual order activity inside the 30-day forecast horizon. */
+$actualSql = "
     SELECT
+        DATE(o.created_at) AS order_date,
         HOUR(o.created_at) AS order_hour,
         COUNT(*) AS order_count
     FROM orders o
     WHERE o.payment_status = 'Paid'
       AND o.order_status <> 'Cancelled'
-      AND DATE(o.created_at) = ?
-    GROUP BY HOUR(o.created_at)
-    ORDER BY order_hour
+      AND o.created_at BETWEEN ? AND ?
+    GROUP BY DATE(o.created_at), HOUR(o.created_at)
+    ORDER BY order_date, order_hour
 ";
+$stmt = $pdo->prepare($actualSql);
+$stmt->execute([
+    $forecastStart . " 00:00:00",
+    $forecastEnd . " 23:59:59"
+]);
 
-$stmt = $pdo->prepare($todaySql);
-$stmt->execute([$forecastDate]);
-
-$actualByHour = [];
+$actualByDateHour = [];
 foreach ($stmt->fetchAll() as $row) {
-    $actualByHour[(int)$row["order_hour"]] = (int)$row["order_count"];
+    $actualByDateHour[$row["order_date"]][(int)$row["order_hour"]] = (int)$row["order_count"];
 }
 
-/* Current active orders for the selected date. */
-$activeSql = "
-    SELECT COUNT(*) AS active_orders
-    FROM orders
-    WHERE DATE(created_at) = ?
-      AND order_status IN ('Pending','Confirmed','Preparing','Ready for Delivery','Ready for Pickup','Out for Delivery')
-";
-$stmt = $pdo->prepare($activeSql);
-$stmt->execute([$forecastDate]);
-$activeOrders = (int)$stmt->fetch()["active_orders"];
-
-/* Total historical demand and overall forecast. */
-$totalHistorical = 0;
+/* Build 30 daily forecasts, each containing 24 hourly forecasts. */
+$dailyForecasts = [];
+$hourlyBySelectedDate = [];
 $totalForecast = 0;
 $peakHour = null;
 $peakForecast = 0;
+$totalActual = 0;
 
-$forecastRows = [];
+for ($day = 0; $day < 30; $day++) {
+    $date = date("Y-m-d", strtotime($forecastStart . " +$day days"));
+    $dayForecast = 0;
+    $dayActual = 0;
+    $dayPeakHour = null;
+    $dayPeakForecast = 0;
+    $hours = [];
 
-for ($hour = 0; $hour < 24; $hour++) {
-    $historicalAverage = $hourlyHistory[$hour]["average"] ?? 0;
-    $actual = $actualByHour[$hour] ?? 0;
+    for ($hour = 0; $hour < 24; $hour++) {
+        $historicalAverage = $hourlyHistory[$hour]["average"] ?? 0;
+        $actual = $actualByDateHour[$date][$hour] ?? 0;
 
-    /*
-     * If the selected date is today, slightly account for actual
-     * order activity already recorded for the hour.
-     */
-    $forecast = $historicalAverage;
+        /*
+         * For future dates, the historical average is the forecast.
+         * If a date has already recorded activity, the larger value
+         * is displayed so actual activity is not understated.
+         */
+        $forecast = $historicalAverage;
+        if ($actual > 0) {
+            $forecast = max($forecast, (float)$actual);
+        }
 
-    if ($forecastDate === date("Y-m-d") && $actual > 0) {
-        $forecast = max($forecast, (float)$actual);
+        $forecastRounded = (int)round($forecast);
+
+        $dayForecast += $forecastRounded;
+        $dayActual += $actual;
+        $totalForecast += $forecastRounded;
+        $totalActual += $actual;
+
+        if ($forecastRounded > $dayPeakForecast) {
+            $dayPeakForecast = $forecastRounded;
+            $dayPeakHour = $hour;
+        }
+
+        if ($forecastRounded > $peakForecast) {
+            $peakForecast = $forecastRounded;
+            $peakHour = $hour;
+        }
+
+        $hours[] = [
+            "hour" => $hour,
+            "label" => date("g A", strtotime(sprintf("%02d:00", $hour))),
+            "historical" => $historicalAverage,
+            "actual" => $actual,
+            "forecast" => $forecastRounded
+        ];
     }
 
-    $forecastRounded = (int)round($forecast);
-
-    $totalHistorical += $historicalAverage;
-    $totalForecast += $forecastRounded;
-
-    if ($forecastRounded > $peakForecast) {
-        $peakForecast = $forecastRounded;
-        $peakHour = $hour;
-    }
-
-    $forecastRows[] = [
-        "hour" => $hour,
-        "label" => date("g A", strtotime(sprintf("%02d:00", $hour))),
-        "historical" => $historicalAverage,
-        "actual" => $actual,
-        "forecast" => $forecastRounded
+    $dailyForecasts[$date] = [
+        "date" => $date,
+        "label" => date("M d, Y", strtotime($date)),
+        "day_name" => date("l", strtotime($date)),
+        "forecast" => $dayForecast,
+        "actual" => $dayActual,
+        "peak_hour" => $dayPeakHour,
+        "peak_forecast" => $dayPeakForecast,
+        "hours" => $hours
     ];
 }
 
-$peakStart = $peakHour !== null
-    ? date("g A", strtotime(sprintf("%02d:00", $peakHour)))
+/* Selected date for the hourly detail table. */
+$selectedDate = $_GET["view"] ?? $forecastStart;
+if (!isset($dailyForecasts[$selectedDate])) {
+    $selectedDate = $forecastStart;
+}
+$selectedDay = $dailyForecasts[$selectedDate];
+$selectedPeakHour = $selectedDay["peak_hour"];
+
+$peakStart = $selectedPeakHour !== null
+    ? date("g A", strtotime(sprintf("%02d:00", $selectedPeakHour)))
     : "No data";
 
-$peakEnd = $peakHour !== null
-    ? date("g A", strtotime(sprintf("%02d:00", ($peakHour + 1) % 24)))
+$peakEnd = $selectedPeakHour !== null
+    ? date("g A", strtotime(sprintf("%02d:00", ($selectedPeakHour + 1) % 24)))
     : "";
 
 $highDemandHours = array_filter(
-    $forecastRows,
-    fn($row) => $row["forecast"] >= max(1, $peakForecast * 0.75)
+    $selectedDay["hours"],
+    fn($row) => $selectedDay["peak_forecast"] > 0 &&
+        $row["forecast"] >= max(1, $selectedDay["peak_forecast"] * 0.75)
 );
+
+$totalHistoricalPerDay = array_sum(array_map(
+    fn($row) => $row["forecast"],
+    $selectedDay["hours"]
+));
 
 function e($value)
 {
     return htmlspecialchars((string)$value, ENT_QUOTES, "UTF-8");
 }
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Demand Forecasting | Jollibee Central Plaza Admin</title>
+    <title>30-Day Demand Forecasting | Jollibee Central Plaza Admin</title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
@@ -300,11 +334,11 @@ function e($value)
 
                 <form method="GET" class="d-flex align-items-end gap-2">
                     <div>
-                        <label class="form-label small fw-semibold mb-1">Forecast Date</label>
+                        <label class="form-label small fw-semibold mb-1">Forecast Start Date</label>
                         <input type="date"
                                name="date"
                                class="form-control"
-                               value="<?= e($forecastDate) ?>">
+                               value="<?= e($forecastStart) ?>">
                     </div>
 
                     <button type="submit" class="btn btn-jollibee">
@@ -315,9 +349,11 @@ function e($value)
 
             <div class="alert alert-light border mb-4">
                 <i class="bi bi-info-circle text-jollibee me-2"></i>
-                Forecast is based on paid, non-cancelled orders from the previous
-                <strong>30 days</strong>, grouped by hour. The selected day's recorded
-                order activity is also considered when available.
+                Forecast covers <strong>30 days</strong> from
+                <strong><?= e(date("M d, Y", strtotime($forecastStart))) ?></strong>
+                to <strong><?= e(date("M d, Y", strtotime($forecastEnd))) ?></strong>.
+                It uses the previous <strong>30 days</strong> of paid, non-cancelled
+                orders, grouped by hour.
             </div>
 
             <div class="row g-3 mb-4">
@@ -326,12 +362,24 @@ function e($value)
                     <div class="card summary-card h-100">
                         <div class="card-body d-flex justify-content-between align-items-center">
                             <div>
-                                <small class="text-muted">Forecasted Orders</small>
+                                <small class="text-muted">30-Day Forecast</small>
                                 <h4 class="fw-bold mb-0"><?= number_format($totalForecast) ?></h4>
+                                <small class="text-muted">predicted orders</small>
                             </div>
-                            <div class="summary-icon">
-                                <i class="bi bi-graph-up-arrow"></i>
+                            <div class="summary-icon"><i class="bi bi-graph-up-arrow"></i></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6 col-xl-3">
+                    <div class="card summary-card h-100">
+                        <div class="card-body d-flex justify-content-between align-items-center">
+                            <div>
+                                <small class="text-muted">Forecast Period</small>
+                                <h4 class="fw-bold mb-0">30 Days</h4>
+                                <small class="text-muted"><?= e(date("M d", strtotime($forecastStart))) ?> – <?= e(date("M d, Y", strtotime($forecastEnd))) ?></small>
                             </div>
+                            <div class="summary-icon"><i class="bi bi-calendar3"></i></div>
                         </div>
                     </div>
                 </div>
@@ -342,10 +390,9 @@ function e($value)
                             <div>
                                 <small class="text-muted">Peak Hour</small>
                                 <h4 class="fw-bold mb-0"><?= e($peakStart) ?></h4>
+                                <small class="text-muted"><?= number_format($peakForecast) ?> orders/hour</small>
                             </div>
-                            <div class="summary-icon">
-                                <i class="bi bi-clock"></i>
-                            </div>
+                            <div class="summary-icon"><i class="bi bi-clock"></i></div>
                         </div>
                     </div>
                 </div>
@@ -354,40 +401,102 @@ function e($value)
                     <div class="card summary-card h-100">
                         <div class="card-body d-flex justify-content-between align-items-center">
                             <div>
-                                <small class="text-muted">Peak Forecast</small>
-                                <h4 class="fw-bold mb-0"><?= number_format($peakForecast) ?></h4>
-                                <small class="text-muted">orders/hour</small>
+                                <small class="text-muted">Forecast Points</small>
+                                <h4 class="fw-bold mb-0">720</h4>
+                                <small class="text-muted">30 days × 24 hours</small>
                             </div>
-                            <div class="summary-icon">
-                                <i class="bi bi-lightning-charge"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-md-6 col-xl-3">
-                    <div class="card summary-card h-100">
-                        <div class="card-body d-flex justify-content-between align-items-center">
-                            <div>
-                                <small class="text-muted">Active Orders</small>
-                                <h4 class="fw-bold mb-0"><?= number_format($activeOrders) ?></h4>
-                                <small class="text-muted">selected date</small>
-                            </div>
-                            <div class="summary-icon">
-                                <i class="bi bi-basket"></i>
-                            </div>
+                            <div class="summary-icon"><i class="bi bi-bar-chart-line"></i></div>
                         </div>
                     </div>
                 </div>
 
             </div>
 
+            <div class="alert alert-light border mb-4">
+                <i class="bi bi-info-circle text-jollibee me-2"></i>
+                <strong>Forecast horizon:</strong> 30 days with 24 hourly predictions per day.
+                The historical baseline uses the 30 days immediately before the forecast period.
+            </div>
+
             <div class="card border-0 shadow-sm mb-4">
                 <div class="card-header bg-white border-0 pt-4 px-4">
-                    <h5 class="fw-bold mb-1">Hourly Demand Forecast</h5>
+                    <h5 class="fw-bold mb-1">30-Day Forecast Summary</h5>
                     <small class="text-muted">
-                        Historical average compared with recorded and forecasted demand
+                        Daily predicted demand for the selected 30-day forecast period
                     </small>
+                </div>
+
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Day</th>
+                                    <th>Forecasted Orders</th>
+                                    <th>Peak Hour</th>
+                                    <th>Peak Forecast</th>
+                                    <th>Demand Level</th>
+                                    <th class="text-end">Hourly Detail</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($dailyForecasts as $day): ?>
+                                    <?php
+                                        $ratio = $peakForecast > 0 ? $day["peak_forecast"] / $peakForecast : 0;
+                                        $level = "Low";
+                                        $badge = "bg-secondary";
+                                        if ($ratio >= 0.75) {
+                                            $level = "High";
+                                            $badge = "bg-danger";
+                                        } elseif ($ratio >= 0.40) {
+                                            $level = "Moderate";
+                                            $badge = "bg-warning text-dark";
+                                        }
+                                        $dayPeakLabel = $day["peak_hour"] !== null
+                                            ? date("g A", strtotime(sprintf("%02d:00", $day["peak_hour"])))
+                                            : "No data";
+                                    ?>
+                                    <tr>
+                                        <td class="fw-semibold"><?= e($day["label"]) ?></td>
+                                        <td><?= e($day["day_name"]) ?></td>
+                                        <td class="fw-bold text-jollibee"><?= number_format($day["forecast"]) ?></td>
+                                        <td><?= e($dayPeakLabel) ?></td>
+                                        <td><?= number_format($day["peak_forecast"]) ?> / hr</td>
+                                        <td><span class="badge <?= $badge ?>"><?= $level ?></span></td>
+                                        <td class="text-end">
+                                            <a class="btn btn-sm btn-outline-danger"
+                                               href="?date=<?= e($forecastStart) ?>&view=<?= e($day["date"]) ?>">
+                                                <i class="bi bi-clock-history me-1"></i> View Hours
+                                            </a>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white border-0 pt-4 px-4">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                        <div>
+                            <h5 class="fw-bold mb-1">Hourly Demand Forecast</h5>
+                            <small class="text-muted">
+                                <?= e($selectedDay["label"]) ?> — 24 hourly forecast points
+                            </small>
+                        </div>
+                        <form method="GET" class="d-flex gap-2 align-items-center">
+                            <input type="hidden" name="date" value="<?= e($forecastStart) ?>">
+                            <select name="view" class="form-select form-select-sm" onchange="this.form.submit()">
+                                <?php foreach ($dailyForecasts as $day): ?>
+                                    <option value="<?= e($day["date"]) ?>" <?= $day["date"] === $selectedDate ? "selected" : "" ?>>
+                                        <?= e($day["label"]) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </form>
+                    </div>
                 </div>
 
                 <div class="card-body">
@@ -402,19 +511,16 @@ function e($value)
                                     <th>Demand Level</th>
                                 </tr>
                             </thead>
-
                             <tbody>
-                                <?php foreach ($forecastRows as $row): ?>
+                                <?php foreach ($selectedDay["hours"] as $row): ?>
                                     <?php
-                                        $isHigh = $peakForecast > 0 &&
-                                            $row["forecast"] >= ($peakForecast * 0.75);
+                                        $isHigh = $selectedDay["peak_forecast"] > 0 &&
+                                            $row["forecast"] >= ($selectedDay["peak_forecast"] * 0.75);
 
                                         $level = "Low";
                                         $badge = "bg-secondary";
-
-                                        if ($peakForecast > 0) {
-                                            $ratio = $row["forecast"] / $peakForecast;
-
+                                        if ($selectedDay["peak_forecast"] > 0) {
+                                            $ratio = $row["forecast"] / $selectedDay["peak_forecast"];
                                             if ($ratio >= 0.75) {
                                                 $level = "High";
                                                 $badge = "bg-danger";
@@ -424,29 +530,12 @@ function e($value)
                                             }
                                         }
                                     ?>
-
                                     <tr class="forecast-row <?= $isHigh ? "high-demand" : "" ?>">
-                                        <td class="fw-semibold">
-                                            <?= e($row["label"]) ?>
-                                        </td>
-
-                                        <td>
-                                            <?= number_format($row["historical"], 1) ?>
-                                        </td>
-
-                                        <td>
-                                            <?= number_format($row["actual"]) ?>
-                                        </td>
-
-                                        <td class="fw-bold text-jollibee">
-                                            <?= number_format($row["forecast"]) ?>
-                                        </td>
-
-                                        <td>
-                                            <span class="badge <?= $badge ?>">
-                                                <?= $level ?>
-                                            </span>
-                                        </td>
+                                        <td class="fw-semibold"><?= e($row["label"]) ?></td>
+                                        <td><?= number_format($row["historical"], 1) ?></td>
+                                        <td><?= number_format($row["actual"]) ?></td>
+                                        <td class="fw-bold text-jollibee"><?= number_format($row["forecast"]) ?></td>
+                                        <td><span class="badge <?= $badge ?>"><?= $level ?></span></td>
                                     </tr>
                                 <?php endforeach; ?>
                             </tbody>
@@ -462,7 +551,7 @@ function e($value)
                         <div class="card-header bg-white border-0 pt-4 px-4">
                             <h5 class="fw-bold mb-1">Peak-Hour Preparation</h5>
                             <small class="text-muted">
-                                Hours with the highest expected demand
+                                High-demand hours for <?= e($selectedDay["label"]) ?>
                             </small>
                         </div>
 
@@ -474,21 +563,15 @@ function e($value)
                             <?php else: ?>
                                 <?php foreach ($highDemandHours as $row): ?>
                                     <?php
-                                        $percentage = $peakForecast > 0
-                                            ? min(100, ($row["forecast"] / $peakForecast) * 100)
+                                        $percentage = $selectedDay["peak_forecast"] > 0
+                                            ? min(100, ($row["forecast"] / $selectedDay["peak_forecast"]) * 100)
                                             : 0;
                                     ?>
-
                                     <div class="mb-4">
                                         <div class="d-flex justify-content-between mb-1">
-                                            <span class="fw-semibold">
-                                                <?= e($row["label"]) ?>
-                                            </span>
-                                            <span class="fw-semibold">
-                                                <?= number_format($row["forecast"]) ?> orders
-                                            </span>
+                                            <span class="fw-semibold"><?= e($row["label"]) ?></span>
+                                            <span class="fw-semibold"><?= number_format($row["forecast"]) ?> orders</span>
                                         </div>
-
                                         <div class="progress">
                                             <div class="progress-bar bg-jollibee"
                                                  role="progressbar"
@@ -506,41 +589,40 @@ function e($value)
                     <div class="card border-0 shadow-sm h-100">
                         <div class="card-header bg-white border-0 pt-4 px-4">
                             <h5 class="fw-bold mb-1">Forecast Information</h5>
-                            <small class="text-muted">How the estimate is calculated</small>
+                            <small class="text-muted">How the 30-day estimate is calculated</small>
                         </div>
 
                         <div class="card-body">
                             <div class="mb-3">
                                 <div class="fw-semibold">
                                     <i class="bi bi-calendar3 text-jollibee me-2"></i>
-                                    Historical Period
+                                    Forecast Period
                                 </div>
                                 <small class="text-muted">
-                                    <?= e(date("M d, Y", strtotime($historyStart))) ?>
-                                    to
-                                    <?= e(date("M d, Y", strtotime($historyEnd))) ?>
+                                    <?= e(date("M d, Y", strtotime($forecastStart))) ?>
+                                    to <?= e(date("M d, Y", strtotime($forecastEnd))) ?>
                                 </small>
                             </div>
 
                             <div class="mb-3">
                                 <div class="fw-semibold">
                                     <i class="bi bi-clock-history text-jollibee me-2"></i>
-                                    Hourly Pattern
+                                    Historical Baseline
                                 </div>
                                 <small class="text-muted">
-                                    Orders are grouped by hour to identify periods
-                                    with higher demand.
+                                    <?= e(date("M d, Y", strtotime($historyStart))) ?>
+                                    to <?= e(date("M d, Y", strtotime($historyEnd))) ?>.
+                                    Orders are grouped by hour.
                                 </small>
                             </div>
 
                             <div class="mb-3">
                                 <div class="fw-semibold">
-                                    <i class="bi bi-activity text-jollibee me-2"></i>
-                                    Current Activity
+                                    <i class="bi bi-bar-chart-line text-jollibee me-2"></i>
+                                    Forecast Resolution
                                 </div>
                                 <small class="text-muted">
-                                    Recorded orders for the selected date are shown
-                                    alongside the historical forecast.
+                                    24 hourly predictions per day, producing 720 forecast points for 30 days.
                                 </small>
                             </div>
 
@@ -550,15 +632,15 @@ function e($value)
                                     Limitation
                                 </div>
                                 <small class="text-muted">
-                                    This is a simple forecasting method based on
-                                    available order history and is not an advanced
-                                    machine-learning prediction model.
+                                    This is a simple historical-pattern forecasting method based on available
+                                    order history and is not an advanced machine-learning prediction model.
                                 </small>
                             </div>
                         </div>
                     </div>
                 </div>
 
+            </div>
             </div>
 
         </main>
