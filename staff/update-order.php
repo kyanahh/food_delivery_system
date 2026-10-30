@@ -85,9 +85,11 @@ $allowed = [
             : "Ready for Delivery"
     ],
 
-    "Ready for Delivery" => [],
+    "Ready for Pickup" => [
+        "Completed"
+    ],
 
-    "Ready for Pickup" => [],
+    "Ready for Delivery" => [],
 
     "Out for Delivery" => [],
 

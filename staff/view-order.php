@@ -162,6 +162,10 @@ switch ($order["order_status"]) {
         ];
 
         break;
+
+    case "Ready for Pickup":
+        $next = ["Completed"];
+        break;
 }
 
 
